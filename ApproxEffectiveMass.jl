@@ -38,7 +38,7 @@ function read_EIGENVAL(f::IOStream)
     println("unknown: $(unknown) npoints: $(npoints) nbands: $(nbands) ")
     empty=readline(f)
 
-    band_energies = [[] for i in 1:nbands] # Initialise a load of empty set, one per band
+    bands = [[] for i in 1:nbands] # Initialise a load of empty set, one per band
 
     for i in 1:npoints
         x,y,z,weight = split(readline(f))
@@ -46,14 +46,17 @@ function read_EIGENVAL(f::IOStream)
             fields = split(readline(f))
             id = parse(Int,fields[1])
             energy = parse(Float64,fields[2])
-            push!(band_energies[id],energy)
+            
+            push!(bands[id],energy)
         end
         empty=readline(f)
     end
 
-    println(band_energies[1])
+    println(bands[1])
 
-    plot(band_energies)
+    plot(bands)
+
+    return bands
 end
 
 read_EIGENVAL(open("EIGENVAL","r"))
