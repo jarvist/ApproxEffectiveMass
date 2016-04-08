@@ -59,6 +59,36 @@ function read_EIGENVAL(f::IOStream)
     return bands
 end
 
-read_EIGENVAL(open("EIGENVAL","r"))
+bands=read_EIGENVAL(open("EIGENVAL","r"))
+
+# From: https://github.com/ApproxFun/ApproxFun.jl/issues/275 , courtesy of private communication with Sheehan Olver
+# Least squares approximation of data on an evenly spaced grid with Chebyshev series
+function vandermonde(S,n,x::AbstractVector)
+    V=Array(Float64,length(x),n)
+    for k=1:n
+        V[:,k]=Fun([zeros(k-1);1],S)(x)
+    end
+    V
+end
+
+# For ...(this)... case, make sure `length(pts) >> n`.
+function ApproxFunVandermonde(vals,n=20,  lower=0.0, upper=360.0)
+    c=Chebyshev([lower,upper]) #Define Chebyshev domain in this range (to match data imported)
+
+    pts=collect(1.0:length(vals)) # Points 1..length(vals)
+
+    V=vandermonde(c,n,pts)
+    println(V,pts,vals)
+    print(V\vals)
+    # Are you ready for the magic?
+    af=Fun(V\vals,c) # Approximate Function (af)
+    # me is now an ApproxFun representation of the tabulated data.
+    # As a Chebyshev polynomial fit we can do all sorts of differentiation + integration.
+    return af
+end
+
+bandsApproxFun=ApproxFunVandermonde(bands[1][:],20,0,40)
+
+plot!(bandsApproxFun)
 
 show() # Show any plots produced...
