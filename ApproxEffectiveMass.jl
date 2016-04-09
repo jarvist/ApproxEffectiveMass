@@ -1,18 +1,26 @@
 using ApproxFun
+using Plots
 println("Hello world! Imports successful...")
 
 
 f=Fun(sin,Fourier([-2*pi,2*pi]))
 
-extrema=roots(f')
+function FunEffectiveMass(f)
+    extrema=roots(f')
 
-println("Extrema look like: (x)", extrema)
-println("f'' at Extrema: ",f''(extrema) )
+    println("Extrema look like: (x)", extrema)
+    println("f'' at Extrema: ",f''(extrema) )
 
-using Plots
-#plot(f)
-#scatter!(extrema,f(extrema);color=:green)
-#show()
+    plot(f)
+    scatter!(extrema,f(extrema);color=:green)
+    ytextoffset=0.1
+    for ex in extrema
+        annotate!(ex,f(ex)+ytextoffset,text(@sprintf("%.2f",f''(ex)),:center,:orange))
+    end
+    show()
+end
+
+FunEffectiveMass(f)
 
 # Code to read in horrid VASP EIGENVAL form, with understanding file format from reading jkitchin's JASP:
 # https://github.com/jkitchin/jasp/blob/31eda6cc3e64d6e953d9d372b80abb2d3e76559c/jasp/jasp_bandstructure.py#L66-L107
@@ -73,7 +81,7 @@ end
 
 # For ...(this)... case, make sure `length(pts) >> n`.
 function ApproxFunVandermonde(vals,n=20,  lower=0.0, upper=360.0)
-    c=Chebyshev([lower,upper]) #Define Chebyshev domain in this range (to match data imported)
+    c=Fourier([lower,upper]) #Define Fourier domain in this range (to match data imported)
 
     pts=collect(1.0:length(vals)) # Points 1..length(vals)
 
@@ -87,7 +95,7 @@ function ApproxFunVandermonde(vals,n=20,  lower=0.0, upper=360.0)
     return af
 end
 
-bandsApproxFun=ApproxFunVandermonde(bands[1][:],20,0,40)
+bandsApproxFun=ApproxFunVandermonde(bands[1][:],20,1,40)
 
 plot!(bandsApproxFun)
 
