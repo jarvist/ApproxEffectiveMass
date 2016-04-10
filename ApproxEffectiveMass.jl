@@ -11,16 +11,15 @@ function FunEffectiveMass(f)
     println("Extrema look like: (x)", extrema)
     println("f'' at Extrema: ",f''(extrema) )
 
-    plot(f)
+    plot!(f)
     scatter!(extrema,f(extrema);color=:green)
     ytextoffset=0.1
     for ex in extrema
         annotate!(ex,f(ex)+ytextoffset,text(@sprintf("%.2f",f''(ex)),:center,:orange))
     end
-    show()
 end
 
-FunEffectiveMass(f)
+#FunEffectiveMass(f)
 
 # Code to read in horrid VASP EIGENVAL form, with understanding file format from reading jkitchin's JASP:
 # https://github.com/jkitchin/jasp/blob/31eda6cc3e64d6e953d9d372b80abb2d3e76559c/jasp/jasp_bandstructure.py#L66-L107
@@ -46,7 +45,7 @@ function read_EIGENVAL(f::IOStream)
     println("unknown: $(unknown) npoints: $(npoints) nbands: $(nbands) ")
     empty=readline(f)
 
-    bands = [[] for i in 1:nbands] # Initialise a load of empty set, one per band
+    bands = [Float64[] for i in 1:nbands] # Initialise a load of empty set, one per band
 
     for i in 1:npoints
         x,y,z,weight = split(readline(f))
@@ -66,8 +65,6 @@ function read_EIGENVAL(f::IOStream)
 
     return bands
 end
-
-bands=read_EIGENVAL(open("EIGENVAL","r"))
 
 # From: https://github.com/ApproxFun/ApproxFun.jl/issues/275 , courtesy of private communication with Sheehan Olver
 # Least squares approximation of data on an evenly spaced grid with Chebyshev series
@@ -95,8 +92,12 @@ function ApproxFunVandermonde(vals,n=20,  lower=0.0, upper=360.0)
     return af
 end
 
-bandsApproxFun=ApproxFunVandermonde(bands[1][:],20,1,40)
+bands=read_EIGENVAL(open("EIGENVAL","r"))
 
-plot!(bandsApproxFun)
+plot()
+for band in bands
+    ApproxFunBand=ApproxFunVandermonde(band,20,1,40)
+    FunEffectiveMass(ApproxFunBand)
+end
 
 show() # Show any plots produced...
