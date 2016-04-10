@@ -13,9 +13,9 @@ function FunEffectiveMass(f)
 
     plot!(f)
     scatter!(extrema,f(extrema);color=:green)
-    ytextoffset=0.1
+    ytextoffset=-0.8
     for ex in extrema
-        annotate!(ex,f(ex)+ytextoffset,text(@sprintf("%.2f",f''(ex)),:center,:orange))
+        annotate!(ex,f(ex)+ytextoffset,text(@sprintf("%.2f",f''(ex)),8,:center,:purple)) # Size 10 ?
     end
 end
 
