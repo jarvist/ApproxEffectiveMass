@@ -61,7 +61,7 @@ function read_EIGENVAL(f::IOStream)
 
     println(bands[1])
 
-    plot(bands)
+    plot(bands,title="Raw Band structure; from EIGENVAL",xaxis="Forever lost in the Brillouin Zone", yaxis="Dos (eV)")
 
     return bands
 end
@@ -94,7 +94,8 @@ end
 
 bands=read_EIGENVAL(open("EIGENVAL","r"))
 
-plot()
+plt = plot(title = "ApproxFun Effective Masses", xaxis = "Forever lost in the Brillouin Zone", yaxis="DoS (eV)")
+
 for band in bands
     ApproxFunBand=ApproxFunVandermonde(band,20,1,40)
     FunEffectiveMass(ApproxFunBand)
