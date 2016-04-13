@@ -8,8 +8,23 @@ f=Fun(sin,Fourier([-2*pi,2*pi]))
 function FunEffectiveMass(f)
     extrema=roots(f')
 
-    println("Extrema look like: (x)", extrema)
-    println("f'' at Extrema: ",f''(extrema) )
+    println("Extrema look like: {k_x}=", extrema)
+    println("Energy at Extrema: f({k_x})=",f(extrema) )
+    println("f''({k_x}) at Extrema: =",f''(extrema) )
+
+    # NOT FULLY WORKING YET; BUT GETTING THERE!
+    a=5.431E-10 # 5.431 Angstrom
+    kmax=10*pi/a # Factor of 10 is magic number for discretisation (# of k-points) in read in EIGENVAL
+    hbar = 1.0545718E-34 # hbar; SI 
+    me = 9.10938356E-31 # Mass of Electron, SI, kg
+    q=1.602E-19 # Electron charge; to covert from VASP eV --> SI, Joules
+    
+    meff=Float64[] # A bit inelegant; certainly a more sophisticated way to do this in Julia
+    for d2Edk2 in f''(extrema)
+        push!(meff,  q * kmax^2 * hbar / ( d2Edk2 * me)) # Not sure of this; many text books drop odd factors :^)
+    end 
+
+    println("Effective masses: ",meff) 
 
     plot!(f)
     scatter!(extrema,f(extrema);color=:green)
@@ -83,8 +98,8 @@ function ApproxFunVandermonde(vals,n=20,  lower=0.0, upper=360.0)
     pts=collect(1.0:length(vals)) # Points 1..length(vals)
 
     V=vandermonde(c,n,pts)
-    println(V,pts,vals)
-    print(V\vals)
+#    println(V,pts,vals)
+#    print(V\vals)
     # Are you ready for the magic?
     af=Fun(V\vals,c) # Approximate Function (af)
     # me is now an ApproxFun representation of the tabulated data.
@@ -98,6 +113,7 @@ plt = plot(title = "ApproxFun Effective Masses", xaxis = "Forever lost in the Br
 
 for band in bands
     ApproxFunBand=ApproxFunVandermonde(band,20,1,40)
+    println("\nBand...",band)
     FunEffectiveMass(ApproxFunBand)
 end
 
