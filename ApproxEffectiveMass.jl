@@ -1,9 +1,8 @@
 using ApproxFun
-using Plots
 println("Hello world! Imports successful...")
 
 
-f=Fun(sin,Fourier([-2*pi,2*pi]))
+#f=Fun(sin,Fourier(-2*pi..2*pi)) # Test Approxfun call.
 
 function FunEffectiveMass(f)
     extrema=roots(f')
@@ -86,14 +85,14 @@ end
 function vandermonde(S,n,x::AbstractVector)
     V=Array(Float64,length(x),n)
     for k=1:n
-        V[:,k]=Fun([zeros(k-1);1],S)(x)
+        V[:,k]=Fun(S,[zeros(k-1);1])(x)
     end
     V
 end
 
 # For ...(this)... case, make sure `length(pts) >> n`.
 function ApproxFunVandermonde(vals,n=20,  lower=0.0, upper=360.0)
-    c=Fourier([lower,upper]) #Define Fourier domain in this range (to match data imported)
+    c=Fourier(lower..upper) #Define Fourier domain in this range (to match data imported)
 
     pts=collect(1.0:length(vals)) # Points 1..length(vals)
 
@@ -101,12 +100,16 @@ function ApproxFunVandermonde(vals,n=20,  lower=0.0, upper=360.0)
 #    println(V,pts,vals)
 #    print(V\vals)
     # Are you ready for the magic?
-    af=Fun(V\vals,c) # Approximate Function (af)
+    af=Fun(c,V\vals) # Approximate Function (af)
     # me is now an ApproxFun representation of the tabulated data.
     # As a Chebyshev polynomial fit we can do all sorts of differentiation + integration.
     return af
 end
 
+# Functions defined.
+# Here is the more 'script' part of the code which actually runs.
+
+using Plots
 bands=read_EIGENVAL(open("EIGENVAL","r"))
 
 plt = plot(title = "ApproxFun Effective Masses", xaxis = "Forever lost in the Brillouin Zone", yaxis="DoS (eV)")
@@ -117,4 +120,5 @@ for band in bands
     FunEffectiveMass(ApproxFunBand)
 end
 
-show() # Show any plots produced...
+png("plot.png") # Save last plot produced...
+
