@@ -1,4 +1,4 @@
-using ApproxFun
+using ApproxFun, Printf, Plots
 println("Hello world! Imports successful...")
 
 
@@ -8,8 +8,8 @@ function FunEffectiveMass(f)
     extrema=roots(f')
 
     println("Extrema look like: {k_x}=", extrema)
-    println("Energy at Extrema: f({k_x})=",f(extrema) )
-    println("f''({k_x}) at Extrema: =",f''(extrema) )
+    println("Energy at Extrema: f({k_x})=",map(f,extrema) )
+    println("f''({k_x}) at Extrema: =",map(f'',extrema) )
 
     # NOT FULLY WORKING YET; BUT GETTING THERE!
     a=5.431E-10 # 5.431 Angstrom
@@ -19,14 +19,17 @@ function FunEffectiveMass(f)
     q=1.602E-19 # Electron charge; to covert from VASP eV --> SI, Joules
     
     meff=Float64[] # A bit inelegant; certainly a more sophisticated way to do this in Julia
-    for d2Edk2 in f''(extrema)
+    for d2Edk2 in map(f'', extrema)
         push!(meff,  q * kmax^2 * hbar / ( d2Edk2 * me)) # Not sure of this; many text books drop odd factors :^)
     end 
 
     println("Effective masses: ",meff) 
 
-    plot!(f)
-    scatter!(extrema,f(extrema);color=:green)
+    plot!(f) # This plots the smooth inferred band structure. 
+    # FIXME: Periodic Fourier domain requires offsetting / making explicitly
+    # periodic so Plots aligns this with the points plotted below.
+
+    scatter!(extrema,map(f,extrema);color=:green)
     ytextoffset=-0.8
     for ex in extrema
         annotate!(ex,f(ex)+ytextoffset,text(@sprintf("%.2f",f''(ex)),8,:center,:purple)) # Size 10 ?
@@ -75,17 +78,17 @@ function read_EIGENVAL(f::IOStream)
 
     println(bands[1])
 
-    plot(bands,title="Raw Band structure; from EIGENVAL",xaxis="Forever lost in the Brillouin Zone", yaxis="Dos (eV)")
+#    plot(bands,title="Raw Band structure; from EIGENVAL",xaxis="Forever lost in the Brillouin Zone", yaxis="DoS (eV)")
 
     return bands
 end
 
 # From: https://github.com/ApproxFun/ApproxFun.jl/issues/275 , courtesy of private communication with Sheehan Olver
-# Least squares approximation of data on an evenly spaced grid with Chebyshev series
+# Least squares approximation of data, on the ApproxFun `S`pace (Chebyshev polynomial or Fourier)
 function vandermonde(S,n,x::AbstractVector)
-    V=Array(Float64,length(x),n)
+    V=Array{Float64}(undef,length(x),n)
     for k=1:n
-        V[:,k]=Fun(S,[zeros(k-1);1])(x)
+        V[:,k]=Fun(S,[zeros(k-1);1]).(x)
     end
     V
 end
@@ -101,24 +104,25 @@ function ApproxFunVandermonde(vals,n=20,  lower=0.0, upper=360.0)
 #    print(V\vals)
     # Are you ready for the magic?
     af=Fun(c,V\vals) # Approximate Function (af)
-    # me is now an ApproxFun representation of the tabulated data.
-    # As a Chebyshev polynomial fit we can do all sorts of differentiation + integration.
+    # `af` is now an ApproxFun representation of the tabulated data.
+    # As a polynomial expression we can analytically differentiation + integration.
     return af
 end
 
 # Functions defined.
-# Here is the more 'script' part of the code which actually runs.
+# Here is the more 'script' part of the code which calls the above
+function main()
+    bands=read_EIGENVAL(open("EIGENVAL","r"))
 
-using Plots
-bands=read_EIGENVAL(open("EIGENVAL","r"))
+    plt = plot(title = "ApproxFun Effective Masses", xaxis = "Forever lost in the Brillouin Zone", yaxis="DoS (eV)")
 
-plt = plot(title = "ApproxFun Effective Masses", xaxis = "Forever lost in the Brillouin Zone", yaxis="DoS (eV)")
+    for band in bands
+        ApproxFunBand=ApproxFunVandermonde(band,20,1,40)
+        println("\nBand...",band)
+        FunEffectiveMass(ApproxFunBand)
+    end
 
-for band in bands
-    ApproxFunBand=ApproxFunVandermonde(band,20,1,40)
-    println("\nBand...",band)
-    FunEffectiveMass(ApproxFunBand)
+    png("plot.png") # Save last plot produced...
 end
 
-png("plot.png") # Save last plot produced...
-
+main()
